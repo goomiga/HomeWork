@@ -44,7 +44,6 @@
         .day-summary-card:active { transform: scale(0.99); }
         .day-head { display: flex; justify-content: space-between; align-items: center; }
         .day-name { font-size: 14px; font-weight: 700; color: var(--text-main); }
-        .day-date { font-size: 11px; color: var(--text-sub); }
         .badge-count { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #eef2ff; color: var(--primary-color); }
         .badge-count.done { background: #dcfce7; color: #15803d; }
         .subject-preview-list { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
@@ -54,8 +53,7 @@
         .back-btn { background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-main); }
         .subject-detail-group { background: white; border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border-color); }
         .subject-detail-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .btn-delete-subject { background: transparent; border: none; font-size: 14px; cursor: pointer; color: #ef4444; opacity: 0.7; padding: 2px 6px; }
-        .btn-delete-subject:hover { opacity: 1; }
+        .btn-delete-subject { background: #fee2e2; border: none; font-size: 11px; cursor: pointer; color: #ef4444; font-weight: 600; padding: 4px 8px; border-radius: 6px; }
         
         .subtask-item { display: flex; align-items: center; padding: 8px 0; gap: 8px; border-bottom: 1px solid #f1f5f9; }
         .subtask-item:last-child { border-bottom: none; }
@@ -69,11 +67,16 @@
         .tag-read { background: var(--color-read); }
         .subtask-text { font-size: 13px; color: var(--text-main); flex: 1; word-break: break-word; }
         .subtask-text.completed { text-decoration: line-through; color: var(--text-sub); }
-        .btn-delete-item { background: transparent; border: none; font-size: 12px; cursor: pointer; color: #94a3b8; padding: 2px 4px; }
-        .btn-delete-item:hover { color: #ef4444; }
+        .btn-delete-item { background: transparent; border: none; font-size: 14px; cursor: pointer; color: #ef4444; padding: 2px 6px; }
+
+        /* Таблица расписания */
+        .timetable-card { background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+        .lesson-num { background: #f1f5f9; color: var(--primary-color); font-weight: bold; font-size: 12px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .lesson-time { font-size: 11px; color: var(--text-sub); font-weight: 500; }
+        .lesson-title { font-size: 13px; font-weight: 700; color: var(--text-main); flex: 1; margin-left: 12px; }
 
         .bottom-nav { background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 8px 0; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-sub); cursor: pointer; border: none; background: transparent; width: 33%; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-sub); cursor: pointer; border: none; background: transparent; flex: 1; }
         .nav-item.active { color: var(--primary-color); font-weight: 700; }
         .nav-icon { font-size: 18px; margin-bottom: 2px; }
 
@@ -95,7 +98,7 @@
             <div class="week-label" id="weekLabel">Текущая неделя</div>
             <button class="week-nav-btn" onclick="changeWeek(1)">►</button>
         </div>
-        <div class="filters-scroll">
+        <div class="filters-scroll" id="filtersBlock">
             <div class="chip active" onclick="setFilter('all', this)">Все</div>
             <div class="chip" onclick="setFilter('important', this)">⭐️ Важные</div>
             <div class="chip" onclick="setFilter('written', this)">🟦 Письменно</div>
@@ -108,14 +111,17 @@
     <div class="content-area" id="contentArea"></div>
 
     <div class="bottom-nav">
-        <button class="nav-item active" onclick="selectedDayId=null; render();">
+        <button class="nav-item active" id="navTasks" onclick="switchTab('tasks')">
+            <span class="nav-icon">📚</span><span>Домашка</span>
+        </button>
+        <button class="nav-item" id="navTimetable" onclick="switchTab('timetable')">
             <span class="nav-icon">📅</span><span>Расписание</span>
         </button>
         <button class="nav-item" onclick="openImportModal()">
             <span class="nav-icon">🔄</span><span>Импорт ПЭШ</span>
         </button>
         <button class="nav-item" onclick="openAddModal()">
-            <span class="nav-icon">➕</span><span>Добавить ДЗ</span>
+            <span class="nav-icon">➕</span><span>Добавить</span>
         </button>
     </div>
 </div>
@@ -135,9 +141,7 @@
 <div class="modal" id="addModal">
     <div class="modal-body">
         <div class="modal-title">Добавить задание</div>
-        <select id="addSubjectSelect" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:8px; font-size:12px;">
-            <!-- Динамически заполняется -->
-        </select>
+        <select id="addSubjectSelect" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:8px; font-size:12px;"></select>
         <input type="text" id="addTaskText" placeholder="Задание (например, №350)" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:8px; font-size:12px;">
         <select id="addType" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:8px; font-size:12px;">
             <option value="written">🟦 Письменно</option>
@@ -163,61 +167,60 @@
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
-    let currentWeekIndex = 0, selectedDayId = null, currentFilter = 'all';
+    let currentWeekIndex = 0, selectedDayId = null, currentFilter = 'all', currentTab = 'tasks', selectedTimetableDay = 'mon';
 
-    // Расписание по предоставленной таблице
+    // Сетка уроков с точным временем
     const scheduleTemplate = {
-        mon: [
-            { num: 1, name: '🎵 Музыка' },
-            { num: 2, name: '💬 Разговоры о важном' },
-            { num: 3, name: '📐 Алгебра' },
-            { num: 4, name: '📖 Русский язык' },
-            { num: 5, name: '📖 Русский язык' },
-            { num: 6, name: '🏛️ История' },
-            { num: 7, name: '📚 Литература' }
-        ],
-        tue: [
-            { num: 1, name: '🌍 География' },
-            { num: 2, name: '🧬 Биология' },
-            { num: 3, name: '💻 Информатика' },
-            { num: 4, name: '📐 Геометрия' },
-            { num: 5, name: '📐 Геометрия' },
-            { num: 6, name: '📖 Русский язык' },
-            { num: 7, name: '📚 Литература' }
-        ],
-        wed: [
-            { num: 1, name: '🏛️ История' },
-            { num: 2, name: '📐 Алгебра' },
-            { num: 3, name: '📖 Русский язык' },
-            { num: 4, name: '🛠️ Труд (техн.)' },
-            { num: 5, name: '🛠️ Труд (техн.)' },
-            { num: 6, name: '🇬🇧 Английский' },
-            { num: 7, name: '🔔 Классный час' }
-        ],
-        thu: [
-            { num: 1, name: '🎵 Музыка' },
-            { num: 2, name: '📐 Алгебра' },
-            { num: 3, name: '📐 Алгебра' },
-            { num: 4, name: '⚡ Физика' },
-            { num: 5, name: '🇬🇧 Английский' },
-            { num: 6, name: '🇬🇧 Английский' }
-        ],
-        fri: [
-            { num: 1, name: '🏃 Физ-ра' },
-            { num: 2, name: '🌍 География' },
-            { num: 3, name: '📊 Вероятность и статистика' },
-            { num: 4, name: '🏛️ История' },
-            { num: 5, name: '🎨 ИЗО' },
-            { num: 6, name: '📐 Геометрия' },
-            { num: 7, name: '🏃 Физ-ра' }
-        ],
-        sat: [
-            { num: 1, name: '🇬🇧 Английский' },
-            { num: 2, name: '🧬 Биология' },
-            { num: 3, name: '⚡ Физика' },
-            { num: 4, name: '📖 Русский язык' },
-            { num: 5, name: '📚 Литература' }
-        ]
+        mon: { name: 'Понедельник', lessons: [
+            { num: 1, time: '8:50–9:30', name: '🎵 Музыка' },
+            { num: 2, time: '9:45–10:25', name: '💬 Разговоры о важном' },
+            { num: 3, time: '10:45–11:25', name: '📐 Алгебра' },
+            { num: 4, time: '11:45–12:25', name: '📖 Русский язык' },
+            { num: 5, time: '12:40–13:20', name: '📖 Русский язык' },
+            { num: 6, time: '13:35–14:15', name: '🏛️ История' },
+            { num: 7, time: '14:30–15:10', name: '📚 Литература' }
+        ]},
+        tue: { name: 'Вторник', lessons: [
+            { num: 1, time: '8:50–9:30', name: '🌍 География' },
+            { num: 2, time: '9:45–10:25', name: '🧬 Биология' },
+            { num: 3, time: '10:45–11:25', name: '💻 Информатика' },
+            { num: 4, time: '11:45–12:25', name: '📐 Геометрия' },
+            { num: 5, time: '12:40–13:20', name: '📖 Русский язык' },
+            { num: 6, time: '13:35–14:15', name: '📚 Литература' }
+        ]},
+        wed: { name: 'Среда', lessons: [
+            { num: 1, time: '8:50–9:30', name: '🏛️ История' },
+            { num: 2, time: '9:45–10:25', name: '📐 Алгебра' },
+            { num: 3, time: '10:45–11:25', name: '📖 Русский язык' },
+            { num: 4, time: '11:45–12:25', name: '🛠️ Труд (техн.)' },
+            { num: 5, time: '12:40–13:20', name: '🛠️ Труд (техн.)' },
+            { num: 6, time: '13:35–14:15', name: '🇬🇧 Английский' },
+            { num: 7, time: '14:30–15:10', name: '🔔 Классный час' }
+        ]},
+        thu: { name: 'Четверг', lessons: [
+            { num: 1, time: '8:50–9:30', name: '🎵 Музыка' },
+            { num: 2, time: '9:45–10:25', name: '📐 Алгебра' },
+            { num: 3, time: '10:45–11:25', name: '📐 Алгебра' },
+            { num: 4, time: '11:45–12:25', name: '⚡ Физика' },
+            { num: 5, time: '12:40–13:20', name: '🇬🇧 Английский' },
+            { num: 6, time: '13:35–14:15', name: '🇬🇧 Английский' }
+        ]},
+        fri: { name: 'Пятница', lessons: [
+            { num: 1, time: '8:50–9:30', name: '🏃 Физ-ра' },
+            { num: 2, time: '9:45–10:25', name: '🌍 География' },
+            { num: 3, time: '10:45–11:25', name: '📊 Вероятность и статистика' },
+            { num: 4, time: '11:45–12:25', name: '🏛️ История' },
+            { num: 5, time: '12:40–13:20', name: '🎨 ИЗО' },
+            { num: 6, time: '13:35–14:15', name: '📐 Геометрия' },
+            { num: 7, time: '14:30–15:10', name: '🏃 Физ-ра' }
+        ]},
+        sat: { name: 'Суббота', lessons: [
+            { num: 1, time: '8:50–9:30', name: '🇬🇧 Английский' },
+            { num: 2, time: '9:45–10:25', name: '🧬 Биология' },
+            { num: 3, time: '10:45–11:25', name: '⚡ Физика' },
+            { num: 4, time: '11:45–12:25', name: '📖 Русский язык' },
+            { num: 5, time: '12:40–13:20', name: '📚 Литература' }
+        ]}
     };
 
     function generateDefaultWeek(label) {
@@ -231,15 +234,13 @@
         ];
 
         days.forEach(d => {
-            const list = scheduleTemplate[d.id] || [];
-            // Исключаем дубли предметов в рамках одного дня
+            const list = scheduleTemplate[d.id].lessons || [];
             const uniqueNames = [...new Set(list.map(item => item.name))];
             uniqueNames.forEach(subName => {
                 d.subjects.push({ id: subName + '_' + Math.random().toString(36).substr(2, 5), name: subName, tasks: [] });
             });
         });
 
-        // Добавим демо-задания
         days[0].subjects.find(s => s.name.includes('Алгебра'))?.tasks.push({ id: '1', text: '№ 345, 347', type: 'written', done: false, important: true });
         days[0].subjects.find(s => s.name.includes('Литература'))?.tasks.push({ id: '2', text: 'Прочитать главы 3-4', type: 'read', done: true, important: false });
 
@@ -251,14 +252,23 @@
         generateDefaultWeek('Следующая неделя')
     ];
 
-    db.ref('homework_v2').on('value', (snapshot) => {
+    // Синхронизация с Firebase V3
+    db.ref('homework_v3').on('value', (snapshot) => {
         const val = snapshot.val();
         if (val) { weeksData = val; render(); } else { saveToCloud(); }
     });
 
-    function saveToCloud() { db.ref('homework_v2').set(weeksData); }
+    function saveToCloud() { db.ref('homework_v3').set(weeksData); }
 
     function changeWeek(dir) { currentWeekIndex = Math.max(0, Math.min(weeksData.length - 1, currentWeekIndex + dir)); selectedDayId = null; render(); }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.getElementById('navTasks').classList.toggle('active', tab === 'tasks');
+        document.getElementById('navTimetable').classList.toggle('active', tab === 'timetable');
+        document.getElementById('filtersBlock').style.display = (tab === 'tasks') ? 'flex' : 'none';
+        render();
+    }
 
     function render() {
         const week = weeksData[currentWeekIndex];
@@ -267,6 +277,30 @@
         const container = document.getElementById('contentArea');
         container.innerHTML = '';
 
+        if (currentTab === 'timetable') {
+            // Вкладка «Расписание»
+            let daysNav = `<div style="display:flex; gap:4px; margin-bottom:12px; overflow-x:auto;">`;
+            const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            dayKeys.forEach(k => {
+                const active = k === selectedTimetableDay ? 'background:var(--primary-color); color:white;' : 'background:#e2e8f0; color:var(--text-main);';
+                daysNav += `<button onclick="selectedTimetableDay='${k}'; render();" style="padding:6px 12px; border:none; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer; ${active}">${scheduleTemplate[k].name.substr(0, 3)}</button>`;
+            });
+            daysNav += `</div>`;
+
+            container.innerHTML = daysNav + `<div style="font-weight:bold; font-size:14px; margin-bottom:10px; color:var(--text-main);">${scheduleTemplate[selectedTimetableDay].name}</div>`;
+
+            scheduleTemplate[selectedTimetableDay].lessons.forEach(l => {
+                container.innerHTML += `
+                <div class="timetable-card">
+                    <div class="lesson-num">${l.num}</div>
+                    <div class="lesson-title">${l.name}</div>
+                    <div class="lesson-time">${l.time}</div>
+                </div>`;
+            });
+            return;
+        }
+
+        // Вкладка «Домашка»
         if (selectedDayId === null) {
             week.days.forEach(day => {
                 let total = 0, doneCount = 0, subjectPills = '';
@@ -281,12 +315,12 @@
                 card.className = 'day-summary-card';
                 card.onclick = () => { selectedDayId = day.id; render(); };
                 const isAllDone = total > 0 && total === doneCount;
-                card.innerHTML = `<div class="day-head"><span class="day-name">${day.name}</span><span class="badge-count ${isAllDone ? 'done' : ''}">${total === 0 ? 'Нет ДЗ' : `${doneCount}/${total} выполнено`}</span></div><div class="subject-preview-list">${subjectPills || '<span style="font-size:11px; color:#94a3b8;">Пока нет заданий</span>'}</div>`;
+                card.innerHTML = `<div class="day-head"><span class="day-name">${day.name}</span><span class="badge-count ${isAllDone ? 'done' : ''}">${total === 0 ? 'Нет ДЗ' : `${doneCount}/${total} выполнено`}</span></div><div class="subject-preview-list">${subjectPills || '<span style="font-size:11px; color:#94a3b8;">Заданий нет</span>'}</div>`;
                 container.appendChild(card);
             });
         } else {
             const day = week.days.find(d => d.id === selectedDayId);
-            container.innerHTML = `<div class="detail-header"><button class="back-btn" onclick="selectedDayId = null; render();">◄ Назад к неделе</button><div style="font-weight:bold; font-size:14px; margin-left: auto;">${day.name}</div></div>`;
+            container.innerHTML = `<div class="detail-header"><button class="back-btn" onclick="selectedDayId = null; render();">◄ Назад</button><div style="font-weight:bold; font-size:14px; margin-left: auto;">${day.name}</div></div>`;
             
             if (day.subjects.length === 0) {
                 container.innerHTML += `<div style="text-align:center; padding: 40px; color:var(--text-sub);">Все предметы удалены</div>`;
@@ -307,7 +341,7 @@
                         <div class="checkbox ${task.done ? 'checked' : ''}" onclick="toggleTask('${task.id}')"></div>
                         <span class="task-tag tag-${task.type}">${getTypeTag(task.type)}</span>
                         <div class="subtask-text ${task.done ? 'completed' : ''}">${task.text}</div>
-                        <span style="cursor:pointer;" onclick="toggleImportant('${task.id}')">${task.important ? '⭐️' : '☆'}</span>
+                        <span style="cursor:pointer; margin-right:4px;" onclick="toggleImportant('${task.id}')">${task.important ? '⭐️' : '☆'}</span>
                         <button class="btn-delete-item" title="Удалить пункт" onclick="deleteTaskItem('${sub.id}', '${task.id}')">❌</button>
                     </div>`;
                 });
@@ -315,7 +349,7 @@
                 group.innerHTML = `
                 <div class="subject-detail-title">
                     <span>${sub.name}</span>
-                    <button class="btn-delete-subject" title="Удалить предмет полностью" onclick="deleteSubject('${day.id}', '${sub.id}')">🗑️ Удалить</button>
+                    <button class="btn-delete-subject" onclick="deleteSubject('${day.id}', '${sub.id}')">🗑️ Удалить</button>
                 </div>
                 ${tasksHtml || '<div style="font-size:11px; color:#94a3b8; padding: 4px 0;">Заданий нет</div>'}`;
                 
@@ -336,7 +370,6 @@
         saveToCloud();
     }
 
-    // ВУДАЛЕНИЕ ОДНОГО ПУНКТА
     function deleteTaskItem(subId, taskId) {
         weeksData.forEach(w => w.days.forEach(d => d.subjects.forEach(s => {
             if (s.id === subId) {
@@ -346,7 +379,6 @@
         saveToCloud();
     }
 
-    // УДАЛЕНИЕ ПРЕДМЕТА ЦЕЛИКОМ
     function deleteSubject(dayId, subId) {
         const day = weeksData[currentWeekIndex].days.find(d => d.id === dayId);
         if (day) {
