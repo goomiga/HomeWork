@@ -65,17 +65,15 @@
         .tag-oral { background: var(--color-oral); }
         .tag-memorize { background: var(--color-memorize); }
         .tag-read { background: var(--color-read); }
-        .tag-other { background: #8b5cf6; }
         .subtask-text { font-size: 13px; color: var(--text-main); flex: 1; word-break: break-word; }
         .subtask-text.completed { text-decoration: line-through; color: var(--text-sub); }
-        .meta-by { font-size: 9px; color: #94a3b8; margin-top: 2px; }
 
         .bottom-nav { background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 8px 0; }
         .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-sub); cursor: pointer; border: none; background: transparent; width: 33%; }
         .nav-item.active { color: var(--primary-color); font-weight: 700; }
         .nav-icon { font-size: 18px; margin-bottom: 2px; }
 
-        /* Modal / Import view */
+        /* Окна ввода и импорта */
         .modal { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
         .modal.active { display: flex; }
         .modal-body { background: white; border-radius: 16px; padding: 18px; width: 100%; max-width: 380px; max-height: 85vh; overflow-y: auto; }
@@ -107,30 +105,30 @@
     <div class="content-area" id="contentArea"></div>
 
     <div class="bottom-nav">
-        <button class="nav-item active" id="navWeeks" onclick="switchTab('weeks')">
+        <button class="nav-item active" onclick="switchTab('weeks')">
             <span class="nav-icon">📅</span><span>Недели</span>
         </button>
-        <button class="nav-item" id="navImport" onclick="openImportModal()">
+        <button class="nav-item" onclick="openImportModal()">
             <span class="nav-icon">🔄</span><span>Импорт ПЭШ</span>
         </button>
-        <button class="nav-item" id="navAdd" onclick="openAddModal()">
+        <button class="nav-item" onclick="openAddModal()">
             <span class="nav-icon">➕</span><span>Добавить ДЗ</span>
         </button>
     </div>
 </div>
 
-<!-- Modal: Import PESH -->
+<!-- Модальное окно: Импорт ПЭШ -->
 <div class="modal" id="importModal">
     <div class="modal-body">
         <div class="modal-title">Импорт из «Петербургского образования»</div>
-        <p style="font-size: 11px; color: var(--text-sub); margin-bottom: 10px;">Вставьте скопированный текст из электронного дневника petersburg.edu.ru или нажмите кнопку быстрой авто-загрузки:</p>
-        <textarea class="modal-textarea pesh-input" id="peshRawText" placeholder="Например: Математика: № 345, 347 письменно. Литература: прочитать стр. 40-50."></textarea>
+        <p style="font-size: 11px; color: var(--text-sub); margin-bottom: 10px;">Вставьте скопированный текст из электронного дневника petersburg.edu.ru:</p>
+        <textarea class="modal-textarea pesh-input" id="peshRawText" placeholder="Математика: № 345, 347 письменно. Литература: прочитать стр. 40-50."></textarea>
         <button class="btn-primary" onclick="parseAndImport()">Разобрать и добавить на неделю</button>
         <button class="btn-secondary" onclick="closeImportModal()">Отмена</button>
     </div>
 </div>
 
-<!-- Modal: Add Task -->
+<!-- Модальное окно: Ручное добавление -->
 <div class="modal" id="addModal">
     <div class="modal-body">
         <div class="modal-title">Быстрое добавление ДЗ</div>
@@ -156,10 +154,7 @@
 </div>
 
 <script>
-    // Инициализация Firebase (демо-конфиг с готовой реалтайм синхронизацией)
-    const firebaseConfig = {
-        databaseURL: "https://homework-planner-default-rtdb.firebaseio.com/"
-    };
+    const firebaseConfig = { databaseURL: "https://homework-planner-default-rtdb.firebaseio.com/" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
@@ -198,20 +193,12 @@
 
     let weeksData = defaultWeeksData;
 
-    // Подписка на живую баз данных облака Firebase
     db.ref('homework_state').on('value', (snapshot) => {
         const val = snapshot.val();
-        if (val) {
-            weeksData = val;
-            render();
-        } else {
-            db.ref('homework_state').set(defaultWeeksData);
-        }
+        if (val) { weeksData = val; render(); } else { db.ref('homework_state').set(defaultWeeksData); }
     });
 
-    function saveToCloud() {
-        db.ref('homework_state').set(weeksData);
-    }
+    function saveToCloud() { db.ref('homework_state').set(weeksData); }
 
     function changeWeek(dir) { currentWeekIndex = Math.max(0, Math.min(weeksData.length - 1, currentWeekIndex + dir)); selectedDayId = null; render(); }
 
@@ -264,22 +251,17 @@
     function getTypeTag(type) { switch(type) { case 'written': return '🟦 Письменно'; case 'oral': return '🟨 Устно'; case 'memorize': return '🟪 Наизусть'; case 'read': return '🟩 Прочитать'; default: return 'Другое'; } }
 
     function toggleTask(taskId) {
-        weeksData.forEach(w => w.days.forEach(d => d.subjects.forEach(s => s.tasks.forEach(t => {
-            if (t.id === taskId) { t.done = !t.done; }
-        }))));
+        weeksData.forEach(w => w.days.forEach(d => d.subjects.forEach(s => s.tasks.forEach(t => { if (t.id === taskId) t.done = !t.done; }))));
         saveToCloud();
     }
 
     function toggleImportant(taskId) {
-        weeksData.forEach(w => w.days.forEach(d => d.subjects.forEach(s => s.tasks.forEach(t => {
-            if (t.id === taskId) { t.important = !t.important; }
-        }))));
+        weeksData.forEach(w => w.days.forEach(d => d.subjects.forEach(s => s.tasks.forEach(t => { if (t.id === taskId) t.important = !t.important; }))));
         saveToCloud();
     }
 
     function setFilter(filter, el) { currentFilter = filter; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); render(); }
 
-    /* Modals & Smart Splitter Parser */
     function openImportModal() { document.getElementById('importModal').classList.add('active'); }
     function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
     function openAddModal() { document.getElementById('addModal').classList.add('active'); }
@@ -289,7 +271,6 @@
         const raw = document.getElementById('peshRawText').value;
         if(!raw.trim()) return;
         
-        // Умный авто-парсинг текста из дневника ПЭШ
         const lines = raw.split('\n');
         lines.forEach(line => {
             if(!line.trim()) return;
@@ -303,7 +284,7 @@
             if(lower.includes('устн') || lower.includes('пересказ')) type = 'oral';
             if(lower.includes('наизусть') || lower.includes('выучи')) type = 'memorize';
 
-            let targetDay = weeksData[currentWeekIndex].days[0]; // По умолчанию на Пн
+            let targetDay = weeksData[currentWeekIndex].days[0];
             let existingSub = targetDay.subjects.find(s => s.name.includes(subj));
             if(!existingSub) {
                 existingSub = { name: '📖 ' + subj, tasks: [] };
