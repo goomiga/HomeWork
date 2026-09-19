@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Приложение Домашка</title>
+    <style>
+        :root {
+            --bg-color: #f4f5f7;
+            --card-bg: #ffffff;
+            --primary-color: #4a6da7;
+            --text-main: #2c3e50;
+            --text-sub: #7f8c8d;
+            --border-color: #e2e8f0;
+            --color-written: #2196f3;
+            --color-oral: #ffb300;
+            --color-memorize: #9c27b0;
+            --color-read: #4caf50;
+        }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; }
+        .phone-frame { width: 100%; max-width: 410px; height: 820px; background-color: var(--bg-color); border-radius: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .phone-header { background-color: var(--card-bg); padding: 16px 16px 12px 16px; border-bottom: 1px solid var(--border-color); }
+        .week-switcher { display: flex; align-items: center; justify-content: space-between; background: #f1f5f9; border-radius: 12px; padding: 4px 8px; margin-bottom: 12px; }
+        .week-nav-btn { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 6px 10px; color: var(--primary-color); font-weight: bold; }
+        .week-label { font-size: 14px; font-weight: 700; color: var(--text-main); }
+        .filters-scroll { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+        .chip { background: #edf2f7; padding: 5px 10px; border-radius: 16px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+        .chip.active { background: var(--primary-color); color: white; }
+        .content-area { flex: 1; overflow-y: auto; padding: 14px; }
+        .day-summary-card { background: var(--card-bg); border-radius: 14px; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border-color); cursor: pointer; }
+        .day-head { display: flex; justify-content: space-between; align-items: center; }
+        .day-name { font-size: 15px; font-weight: 700; color: var(--text-main); }
+        .day-date { font-size: 12px; color: var(--text-sub); }
+        .badge-count { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #eef2ff; color: var(--primary-color); }
+        .badge-count.done { background: #dcfce7; color: #15803d; }
+        .subject-preview-list { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .subject-pill { background: #f8fafc; border: 1px solid #e2e8f0; font-size: 11px; padding: 3px 8px; border-radius: 6px; }
+        .detail-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .back-btn { background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .subject-detail-group { background: white; border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border-color); }
+        .subject-detail-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
+        .subtask-item { display: flex; align-items: center; padding: 6px 0; gap: 8px; }
+        .checkbox { width: 18px; height: 18px; border-radius: 5px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .checkbox.checked { background-color: #22c55e; border-color: #22c55e; color: white; }
+        .checkbox.checked::after { content: "✓"; font-size: 11px; font-weight: bold; }
+        .task-tag { font-size: 10px; padding: 2px 5px; border-radius: 4px; color: white; font-weight: 600; }
+        .tag-written { background: var(--color-written); }
+        .tag-oral { background: var(--color-oral); }
+        .tag-memorize { background: var(--color-memorize); }
+        .tag-read { background: var(--color-read); }
+        .subtask-text { font-size: 13px; color: var(--text-main); flex: 1; }
+        .subtask-text.completed { text-decoration: line-through; color: var(--text-sub); }
+        .bottom-nav { background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--text-sub); }
+        .nav-item.active { color: var(--primary-color); font-weight: 700; }
+    </style>
+</head>
+<body>
+<div class="phone-frame">
+    <div class="phone-header">
+        <div class="week-switcher">
+            <button class="week-nav-btn" onclick="changeWeek(-1)">◄</button>
+            <div class="week-label" id="weekLabel">Текущая неделя (21 – 26 сент)</div>
+            <button class="week-nav-btn" onclick="changeWeek(1)">►</button>
+        </div>
+        <div class="filters-scroll">
+            <div class="chip active" onclick="setFilter('all', this)">Все</div>
+            <div class="chip" onclick="setFilter('important', this)">⭐️ Важные</div>
+            <div class="chip" onclick="setFilter('written', this)">🟦 Письменно</div>
+            <div class="chip" onclick="setFilter('memorize', this)">🟪 Наизусть</div>
+        </div>
+    </div>
+    <div class="content-area" id="contentArea"></div>
+    <div class="bottom-nav">
+        <div class="nav-item active"><span style="font-size:18px;">📅</span><span>Недели</span></div>
+        <div class="nav-item"><span style="font-size:18px;">☷</span><span>База ДЗ</span></div>
+        <div class="nav-item"><span style="font-size:18px;">🔄</span><span>Импорт ПЭШ</span></div>
+    </div>
+</div>
+<script>
+    let currentWeekIndex = 0, selectedDayId = null, currentFilter = 'all';
+    const weeksData = [
+        {
+            label: 'Текущая неделя (21 – 26 сент)',
+            days: [
+                { id: 'mon', name: 'Понедельник', date: '21 сентября', subjects: [
+                    { name: '📐 Математика', tasks: [{ id: 1, text: '№ 345', type: 'written', done: true, important: false }, { id: 2, text: '№ 347', type: 'written', done: false, important: true }] },
+                    { name: '📚 Литература', tasks: [{ id: 3, text: 'Главы 5–6', type: 'read', done: false, important: false }] }
+                ]},
+                { id: 'tue', name: 'Вторник', date: '22 сентября', subjects: [
+                    { name: '🇬🇧 Английский', tasks: [{ id: 4, text: 'Слова Unit 4', type: 'memorize', done: true, important: true }] },
+                    { name: '🟣 Биология', tasks: [{ id: 5, text: '§ 12 прочитать', type: 'read', done: false, important: false }] }
+                ]},
+                { id: 'wed', name: 'Среда', date: '23 сентября', subjects: [{ name: '📐 Математика', tasks: [{ id: 6, text: 'Правило стр. 48', type: 'memorize', done: false, important: true }] }] },
+                { id: 'thu', name: 'Четверг', date: '24 сентября', subjects: [] },
+                { id: 'fri', name: 'Пятница', date: '25 сентября', subjects: [] },
+                { id: 'sat', name: 'Суббота', date: '26 сентября', subjects: [] }
+            ]
+        },
+        {
+            label: 'Следующая неделя (28 сент – 3 окт)',
+            days: [
+                { id: 'mon2', name: 'Понедельник', date: '28 сентября', subjects: [{ name: '📐 Математика', tasks: [{ id: 7, text: '№ 360, 362', type: 'written', done: false, important: false }] }] },
+                { id: 'tue2', name: 'Вторник', date: '29 сентября', subjects: [{ name: '🇬🇧 Английский', tasks: [{ id: 9, text: 'Пересказ', type: 'oral', done: false, important: true }] }] },
+                { id: 'wed2', name: 'Среда', date: '30 сентября', subjects: [] },
+                { id: 'thu2', name: 'Четверг', date: '1 октября', subjects: [] },
+                { id: 'fri2', name: 'Пятница', date: '2 октября', subjects: [] },
+                { id: 'sat2', name: 'Суббота', date: '3 октября', subjects: [] }
+            ]
+        }
+    ];
+    function changeWeek(dir) { currentWeekIndex = Math.max(0, Math.min(weeksData.length - 1, currentWeekIndex + dir)); selectedDayId = null; render(); }
+    function render() {
+        const week = weeksData[currentWeekIndex];
+        document.getElementById('weekLabel').innerText = week.label;
+        const container = document.getElementById('contentArea');
+        container.innerHTML = '';
+        if (selectedDayId === null) {
+            week.days.forEach(day => {
+                let total = 0, doneCount = 0, subjectPills = '';
+                day.subjects.forEach(sub => {
+                    subjectPills += `<span class="subject-pill">${sub.name} (${sub.tasks.length})</span>`;
+                    sub.tasks.forEach(t => { total++; if (t.done) doneCount++; });
+                });
+                const card = document.createElement('div');
+                card.className = 'day-summary-card';
+                card.onclick = () => { selectedDayId = day.id; render(); };
+                const isAllDone = total > 0 && total === doneCount;
+                card.innerHTML = `<div class="day-head"><div><span class="day-name">${day.name}</span> <span class="day-date">· ${day.date}</span></div><span class="badge-count ${isAllDone ? 'done' : ''}">${total === 0 ? 'Нет ДЗ' : `${doneCount}/${total} выполнено`}</span></div><div class="subject-preview-list">${subjectPills || '<span style="font-size:11px; color:#94a3b8;">Отдых</span>'}</div>`;
+                container.appendChild(card);
+            });
+        } else {
+            const day = week.days.find(d => d.id === selectedDayId);
+            container.innerHTML = `<div class="detail-header"><button class="back-btn" onclick="selectedDayId = null; render();">◄ Ко всей неделе</button><div style="font-weight:bold; font-size:15px; margin-left: auto;">${day.name}, ${day.date}</div></div>`;
+            if (day.subjects.length === 0) { container.innerHTML += `<div style="text-align:center; padding: 40px; color:var(--text-sub);">На этот день ничего не задано 🎉</div>`; return; }
+            day.subjects.forEach(sub => {
+                const group = document.createElement('div');
+                group.className = 'subject-detail-group';
+                let tasksHtml = '';
+                sub.tasks.forEach(task => {
+                    if (currentFilter === 'important' && !task.important) return;
+                    if (currentFilter !== 'all' && currentFilter !== 'important' && task.type !== currentFilter) return;
+                    tasksHtml += `<div class="subtask-item"><div class="checkbox ${task.done ? 'checked' : ''}" onclick="toggleTask(${task.id})"></div><span class="task-tag tag-${task.type}">${getTypeTag(task.type)}</span><span class="subtask-text ${task.done ? 'completed' : ''}">${task.text}</span>${task.important ? '<span>⭐️</span>' : ''}</div>`;
+                });
+                if (tasksHtml) { group.innerHTML = `<div class="subject-detail-title">${sub.name}</div>${tasksHtml}`; container.appendChild(group); }
+            });
+        }
+    }
+    function getTypeTag(type) { switch(type) { case 'written': return '🟦 Письменно'; case 'oral': return '🟨 Устно'; case 'memorize': return '🟪 Наизусть'; case 'read': return '🟩 Прочитать'; default: return 'Другое'; } }
+    function toggleTask(taskId) { weeksData.forEach(w => w.days.forEach(d => d.subjects.forEach(s => s.tasks.forEach(t => { if (t.id === taskId) t.done = !t.done; })))); render(); }
+    function setFilter(filter, el) { currentFilter = filter; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); render(); }
+    render();
+</script>
+</body>
+</html>
