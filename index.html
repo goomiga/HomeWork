@@ -53,6 +53,7 @@
         .back-btn { background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-main); }
         .subject-detail-group { background: white; border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border-color); }
         .subject-detail-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-add-inline { background: #e0e7ff; border: none; font-size: 11px; cursor: pointer; color: var(--primary-color); font-weight: 600; padding: 4px 8px; border-radius: 6px; margin-right: 4px; }
         .btn-delete-subject { background: #fee2e2; border: none; font-size: 11px; cursor: pointer; color: #ef4444; font-weight: 600; padding: 4px 8px; border-radius: 6px; }
         
         .subtask-item { display: flex; align-items: center; padding: 8px 0; gap: 8px; border-bottom: 1px solid #f1f5f9; }
@@ -67,15 +68,15 @@
         .tag-read { background: var(--color-read); }
         .subtask-text { font-size: 13px; color: var(--text-main); flex: 1; word-break: break-word; }
         .subtask-text.completed { text-decoration: line-through; color: var(--text-sub); }
-        .btn-delete-item { background: transparent; border: none; font-size: 14px; cursor: pointer; color: #ef4444; padding: 2px 6px; }
+        .btn-delete-item { background: #f1f5f9; border: none; font-size: 12px; cursor: pointer; color: #ef4444; padding: 4px 8px; border-radius: 6px; }
 
-        /* Таблица расписания */
-        .timetable-card { background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+        .timetable-card { background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+        .timetable-card:active { background: #f8fafc; }
         .lesson-num { background: #f1f5f9; color: var(--primary-color); font-weight: bold; font-size: 12px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .lesson-time { font-size: 11px; color: var(--text-sub); font-weight: 500; }
         .lesson-title { font-size: 13px; font-weight: 700; color: var(--text-main); flex: 1; margin-left: 12px; }
 
-        .bottom-nav { background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 8px 0; }
+        .bottom-nav { background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-around; padding: 8px 0; }
         .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-sub); cursor: pointer; border: none; background: transparent; flex: 1; }
         .nav-item.active { color: var(--primary-color); font-weight: 700; }
         .nav-icon { font-size: 18px; margin-bottom: 2px; }
@@ -86,6 +87,7 @@
         .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--text-main); }
         .pesh-input { width: 100%; height: 90px; border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; font-size: 12px; margin-bottom: 10px; resize: none; }
         .btn-primary { width: 100%; background: var(--primary-color); color: white; border: none; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
+        .btn-danger { width: 100%; background: #ef4444; color: white; border: none; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
         .btn-secondary { width: 100%; background: #e2e8f0; color: var(--text-main); border: none; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
     </style>
 </head>
@@ -130,17 +132,17 @@
 <div class="modal" id="importModal">
     <div class="modal-body">
         <div class="modal-title">Импорт из «Петербургского образования»</div>
-        <p style="font-size: 11px; color: var(--text-sub); margin-bottom: 10px;">Вставьте текст из электронного дневника:</p>
+        <p style="font-size: 11px; color: var(--text-sub); margin-bottom: 10px;">Вставьте текст из дневника:</p>
         <textarea class="modal-textarea pesh-input" id="peshRawText" placeholder="Алгебра: № 345, 347 письменно. Литература: прочитать стр. 40-50."></textarea>
         <button class="btn-primary" onclick="parseAndImport()">Разобрать и добавить</button>
         <button class="btn-secondary" onclick="closeImportModal()">Отмена</button>
     </div>
 </div>
 
-<!-- Модальное окно: Ручное добавление -->
+<!-- Модальное окно: Добавление/Редактирование -->
 <div class="modal" id="addModal">
     <div class="modal-body">
-        <div class="modal-title">Добавить задание</div>
+        <div class="modal-title" id="modalTitleText">Добавить задание</div>
         <select id="addSubjectSelect" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:8px; font-size:12px;"></select>
         <input type="text" id="addTaskText" placeholder="Задание (например, №350)" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:8px; font-size:12px;">
         <select id="addType" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:8px; font-size:12px;">
@@ -162,14 +164,24 @@
     </div>
 </div>
 
+<!-- Модальное окно: Подтверждение удаления -->
+<div class="modal" id="confirmModal">
+    <div class="modal-body">
+        <div class="modal-title" id="confirmTitle">Подтверждение</div>
+        <p id="confirmMessage" style="font-size: 13px; color: var(--text-main); margin-bottom: 16px;"></p>
+        <button class="btn-danger" id="confirmActionBtn">Да, удалить</button>
+        <button class="btn-secondary" onclick="closeConfirmModal()">Отмена</button>
+    </div>
+</div>
+
 <script>
     const firebaseConfig = { databaseURL: "https://homework-planner-default-rtdb.firebaseio.com/" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
     let currentWeekIndex = 0, selectedDayId = null, currentFilter = 'all', currentTab = 'tasks', selectedTimetableDay = 'mon';
+    let pendingConfirmAction = null;
 
-    // Сетка уроков с точным временем
     const scheduleTemplate = {
         mon: { name: 'Понедельник', lessons: [
             { num: 1, time: '8:50–9:30', name: '🎵 Музыка' },
@@ -237,12 +249,12 @@
             const list = scheduleTemplate[d.id].lessons || [];
             const uniqueNames = [...new Set(list.map(item => item.name))];
             uniqueNames.forEach(subName => {
-                d.subjects.push({ id: subName + '_' + Math.random().toString(36).substr(2, 5), name: subName, tasks: [] });
+                d.subjects.push({ id: subName.replace(/\s+/g, '_') + '_' + Math.random().toString(36).substr(2, 4), name: subName, tasks: [] });
             });
         });
 
-        days[0].subjects.find(s => s.name.includes('Алгебра'))?.tasks.push({ id: '1', text: '№ 345, 347', type: 'written', done: false, important: true });
-        days[0].subjects.find(s => s.name.includes('Литература'))?.tasks.push({ id: '2', text: 'Прочитать главы 3-4', type: 'read', done: true, important: false });
+        days[0].subjects.find(s => s.name.includes('Алгебра'))?.tasks.push({ id: 't1', text: '№ 345, 347', type: 'written', done: false, important: true });
+        days[0].subjects.find(s => s.name.includes('Литература'))?.tasks.push({ id: 't2', text: 'Прочитать главы 3-4', type: 'read', done: true, important: false });
 
         return { label: label, days: days };
     }
@@ -252,13 +264,12 @@
         generateDefaultWeek('Следующая неделя')
     ];
 
-    // Синхронизация с Firebase V3
-    db.ref('homework_v3').on('value', (snapshot) => {
+    db.ref('homework_v4').on('value', (snapshot) => {
         const val = snapshot.val();
         if (val) { weeksData = val; render(); } else { saveToCloud(); }
     });
 
-    function saveToCloud() { db.ref('homework_v3').set(weeksData); }
+    function saveToCloud() { db.ref('homework_v4').set(weeksData); }
 
     function changeWeek(dir) { currentWeekIndex = Math.max(0, Math.min(weeksData.length - 1, currentWeekIndex + dir)); selectedDayId = null; render(); }
 
@@ -278,7 +289,6 @@
         container.innerHTML = '';
 
         if (currentTab === 'timetable') {
-            // Вкладка «Расписание»
             let daysNav = `<div style="display:flex; gap:4px; margin-bottom:12px; overflow-x:auto;">`;
             const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
             dayKeys.forEach(k => {
@@ -287,20 +297,22 @@
             });
             daysNav += `</div>`;
 
-            container.innerHTML = daysNav + `<div style="font-weight:bold; font-size:14px; margin-bottom:10px; color:var(--text-main);">${scheduleTemplate[selectedTimetableDay].name}</div>`;
+            container.innerHTML = daysNav + `<div style="font-weight:bold; font-size:13px; margin-bottom:8px; color:var(--text-sub);">Нажмите на урок, чтобы добавить ДЗ:</div>`;
 
             scheduleTemplate[selectedTimetableDay].lessons.forEach(l => {
-                container.innerHTML += `
-                <div class="timetable-card">
+                const card = document.createElement('div');
+                card.className = 'timetable-card';
+                card.onclick = () => openAddModal(l.name, selectedTimetableDay);
+                card.innerHTML = `
                     <div class="lesson-num">${l.num}</div>
                     <div class="lesson-title">${l.name}</div>
                     <div class="lesson-time">${l.time}</div>
-                </div>`;
+                `;
+                container.appendChild(card);
             });
             return;
         }
 
-        // Вкладка «Домашка»
         if (selectedDayId === null) {
             week.days.forEach(day => {
                 let total = 0, doneCount = 0, subjectPills = '';
@@ -342,14 +354,17 @@
                         <span class="task-tag tag-${task.type}">${getTypeTag(task.type)}</span>
                         <div class="subtask-text ${task.done ? 'completed' : ''}">${task.text}</div>
                         <span style="cursor:pointer; margin-right:4px;" onclick="toggleImportant('${task.id}')">${task.important ? '⭐️' : '☆'}</span>
-                        <button class="btn-delete-item" title="Удалить пункт" onclick="deleteTaskItem('${sub.id}', '${task.id}')">❌</button>
+                        <button class="btn-delete-item" title="Удалить только этот пункт" onclick="askDeleteTaskItem('${day.id}', '${sub.id}', '${task.id}')">❌</button>
                     </div>`;
                 });
 
                 group.innerHTML = `
                 <div class="subject-detail-title">
                     <span>${sub.name}</span>
-                    <button class="btn-delete-subject" onclick="deleteSubject('${day.id}', '${sub.id}')">🗑️ Удалить</button>
+                    <div>
+                        <button class="btn-add-inline" onclick="openAddModal('${sub.name}', '${day.id}')">➕ Пункт</button>
+                        <button class="btn-delete-subject" onclick="askDeleteSubject('${day.id}', '${sub.id}', '${sub.name}')">🗑️</button>
+                    </div>
                 </div>
                 ${tasksHtml || '<div style="font-size:11px; color:#94a3b8; padding: 4px 0;">Заданий нет</div>'}`;
                 
@@ -370,13 +385,28 @@
         saveToCloud();
     }
 
-    function deleteTaskItem(subId, taskId) {
-        weeksData.forEach(w => w.days.forEach(d => d.subjects.forEach(s => {
-            if (s.id === subId) {
-                s.tasks = s.tasks.filter(t => t.id !== taskId);
+    // ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ
+    function askDeleteTaskItem(dayId, subId, taskId) {
+        openConfirmModal('Удаление пункта', 'Удалить этот пункт задания?', () => {
+            deleteTaskItem(dayId, subId, taskId);
+        });
+    }
+
+    function askDeleteSubject(dayId, subId, subName) {
+        openConfirmModal('Удаление предмета', `Удалить предмет "${subName}" со всеми заданиями?`, () => {
+            deleteSubject(dayId, subId);
+        });
+    }
+
+    function deleteTaskItem(dayId, subId, taskId) {
+        const day = weeksData[currentWeekIndex].days.find(d => d.id === dayId);
+        if (day) {
+            const sub = day.subjects.find(s => s.id === subId);
+            if (sub) {
+                sub.tasks = sub.tasks.filter(t => t.id !== taskId);
+                saveToCloud();
             }
-        })));
-        saveToCloud();
+        }
     }
 
     function deleteSubject(dayId, subId) {
@@ -389,18 +419,42 @@
 
     function setFilter(filter, el) { currentFilter = filter; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); render(); }
 
+    function openConfirmModal(title, message, onConfirm) {
+        document.getElementById('confirmTitle').innerText = title;
+        document.getElementById('confirmMessage').innerText = message;
+        pendingConfirmAction = onConfirm;
+        document.getElementById('confirmModal').classList.add('active');
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').classList.remove('active');
+        pendingConfirmAction = null;
+    }
+
+    document.getElementById('confirmActionBtn').onclick = function() {
+        if (pendingConfirmAction) pendingConfirmAction();
+        closeConfirmModal();
+    };
+
     function openImportModal() { document.getElementById('importModal').classList.add('active'); }
     function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
     
-    function openAddModal() {
+    function openAddModal(presetSubject = null, presetDay = null) {
         const select = document.getElementById('addSubjectSelect');
         select.innerHTML = '';
         const allSubjects = ['📐 Алгебра', '📐 Геометрия', '📖 Русский язык', '📚 Литература', '🇬🇧 Английский', '⚡ Физика', '🧬 Биология', '🌍 География', '🏛️ История', '💻 Информатика', '📊 Вероятность и статистика', '🎵 Музыка', '🎨 ИЗО', '🛠️ Труд (техн.)', '🏃 Физ-ра'];
         allSubjects.forEach(s => {
-            select.innerHTML += `<option value="${s}">${s}</option>`;
+            const isSelected = presetSubject && s.includes(presetSubject.replace(/[^а-яА-Яa-zA-Z]/g, '').trim());
+            select.innerHTML += `<option value="${s}" ${isSelected ? 'selected' : ''}>${s}</option>`;
         });
+
+        if (presetDay) {
+            document.getElementById('addDay').value = presetDay;
+        }
+
         document.getElementById('addModal').classList.add('active');
     }
+    
     function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
 
     function parseAndImport() {
@@ -423,10 +477,10 @@
             let targetDay = weeksData[currentWeekIndex].days[0];
             let existingSub = targetDay.subjects.find(s => s.name.toLowerCase().includes(subjName.toLowerCase()));
             if(!existingSub) {
-                existingSub = { id: 'sub_' + Date.now() + Math.random(), name: '📖 ' + subjName, tasks: [] };
+                existingSub = { id: 'sub_' + Date.now() + Math.random().toString(36).substr(2,4), name: '📖 ' + subjName, tasks: [] };
                 targetDay.subjects.push(existingSub);
             }
-            existingSub.tasks.push({ id: Date.now() + '' + Math.random(), text: taskText, type: type, done: false, important: false });
+            existingSub.tasks.push({ id: 't_' + Date.now() + Math.random().toString(36).substr(2,4), text: taskText, type: type, done: false, important: false });
         });
 
         saveToCloud();
@@ -436,20 +490,21 @@
 
     function addNewTaskCustom() {
         const subjName = document.getElementById('addSubjectSelect').value;
-        const text = document.getElementById('addTaskText').value || 'Задание';
+        const text = document.getElementById('addTaskText').value || 'Новое задание';
         const type = document.getElementById('addType').value;
         const dayCode = document.getElementById('addDay').value;
 
         let targetDay = weeksData[currentWeekIndex].days.find(d => d.id === dayCode) || weeksData[currentWeekIndex].days[0];
         let existingSub = targetDay.subjects.find(s => s.name === subjName);
         if(!existingSub) {
-            existingSub = { id: 'sub_' + Date.now(), name: subjName, tasks: [] };
+            existingSub = { id: 'sub_' + Date.now() + Math.random().toString(36).substr(2,4), name: subjName, tasks: [] };
             targetDay.subjects.push(existingSub);
         }
-        existingSub.tasks.push({ id: Date.now() + '', text: text, type: type, done: false, important: false });
+        existingSub.tasks.push({ id: 't_' + Date.now() + Math.random().toString(36).substr(2,4), text: text, type: type, done: false, important: false });
 
         saveToCloud();
         closeAddModal();
+        document.getElementById('addTaskText').value = '';
     }
 
     render();
