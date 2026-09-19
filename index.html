@@ -2,8 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Приложение Домашка</title>
+    <link rel="manifest" href="manifest.json">
+    <!-- Firebase Cloud SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --bg-color: #f4f5f7;
@@ -18,50 +23,75 @@
             --color-read: #4caf50;
         }
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
-        body { background-color: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; }
-        .phone-frame { width: 100%; max-width: 410px; height: 820px; background-color: var(--bg-color); border-radius: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .phone-header { background-color: var(--card-bg); padding: 16px 16px 12px 16px; border-bottom: 1px solid var(--border-color); }
-        .week-switcher { display: flex; align-items: center; justify-content: space-between; background: #f1f5f9; border-radius: 12px; padding: 4px 8px; margin-bottom: 12px; }
+        body { background-color: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 0; margin: 0; }
+        .phone-frame { width: 100%; max-width: 430px; height: 100vh; max-height: 900px; background-color: var(--bg-color); border-radius: 0; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        @media(min-width: 500px) { .phone-frame { border-radius: 36px; height: 840px; } }
+        
+        .phone-header { background-color: var(--card-bg); padding: 14px 16px 10px 16px; border-bottom: 1px solid var(--border-color); }
+        .sync-status { font-size: 10px; color: #16a34a; text-align: center; margin-bottom: 6px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .sync-dot { width: 6px; height: 6px; background-color: #16a34a; border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        
+        .week-switcher { display: flex; align-items: center; justify-content: space-between; background: #f1f5f9; border-radius: 12px; padding: 4px 8px; margin-bottom: 10px; }
         .week-nav-btn { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 6px 10px; color: var(--primary-color); font-weight: bold; }
-        .week-label { font-size: 14px; font-weight: 700; color: var(--text-main); }
-        .filters-scroll { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
-        .chip { background: #edf2f7; padding: 5px 10px; border-radius: 16px; font-size: 12px; cursor: pointer; white-space: nowrap; }
-        .chip.active { background: var(--primary-color); color: white; }
-        .content-area { flex: 1; overflow-y: auto; padding: 14px; }
-        .day-summary-card { background: var(--card-bg); border-radius: 14px; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border-color); cursor: pointer; }
+        .week-label { font-size: 13px; font-weight: 700; color: var(--text-main); }
+        .filters-scroll { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+        .chip { background: #edf2f7; padding: 5px 10px; border-radius: 16px; font-size: 11px; cursor: pointer; white-space: nowrap; color: var(--text-main); }
+        .chip.active { background: var(--primary-color); color: white; font-weight: 600; }
+        
+        .content-area { flex: 1; overflow-y: auto; padding: 12px; }
+        .day-summary-card { background: var(--card-bg); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.1s; }
+        .day-summary-card:active { transform: scale(0.99); }
         .day-head { display: flex; justify-content: space-between; align-items: center; }
-        .day-name { font-size: 15px; font-weight: 700; color: var(--text-main); }
-        .day-date { font-size: 12px; color: var(--text-sub); }
-        .badge-count { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #eef2ff; color: var(--primary-color); }
+        .day-name { font-size: 14px; font-weight: 700; color: var(--text-main); }
+        .day-date { font-size: 11px; color: var(--text-sub); }
+        .badge-count { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #eef2ff; color: var(--primary-color); }
         .badge-count.done { background: #dcfce7; color: #15803d; }
-        .subject-preview-list { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
-        .subject-pill { background: #f8fafc; border: 1px solid #e2e8f0; font-size: 11px; padding: 3px 8px; border-radius: 6px; }
+        .subject-preview-list { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+        .subject-pill { background: #f8fafc; border: 1px solid #e2e8f0; font-size: 10px; padding: 3px 7px; border-radius: 5px; color: var(--text-main); }
+        
         .detail-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-        .back-btn { background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .back-btn { background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-main); }
         .subject-detail-group { background: white; border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border-color); }
-        .subject-detail-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
-        .subtask-item { display: flex; align-items: center; padding: 6px 0; gap: 8px; }
-        .checkbox { width: 18px; height: 18px; border-radius: 5px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .subject-detail-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .subtask-item { display: flex; align-items: center; padding: 8px 0; gap: 8px; border-bottom: 1px solid #f1f5f9; }
+        .subtask-item:last-child { border-bottom: none; }
+        .checkbox { width: 20px; height: 20px; border-radius: 6px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; background: #fff; }
         .checkbox.checked { background-color: #22c55e; border-color: #22c55e; color: white; }
-        .checkbox.checked::after { content: "✓"; font-size: 11px; font-weight: bold; }
-        .task-tag { font-size: 10px; padding: 2px 5px; border-radius: 4px; color: white; font-weight: 600; }
+        .checkbox.checked::after { content: "✓"; font-size: 12px; font-weight: bold; }
+        .task-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; color: white; font-weight: 600; flex-shrink: 0; }
         .tag-written { background: var(--color-written); }
         .tag-oral { background: var(--color-oral); }
         .tag-memorize { background: var(--color-memorize); }
         .tag-read { background: var(--color-read); }
-        .subtask-text { font-size: 13px; color: var(--text-main); flex: 1; }
+        .tag-other { background: #8b5cf6; }
+        .subtask-text { font-size: 13px; color: var(--text-main); flex: 1; word-break: break-word; }
         .subtask-text.completed { text-decoration: line-through; color: var(--text-sub); }
-        .bottom-nav { background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--text-sub); }
+        .meta-by { font-size: 9px; color: #94a3b8; margin-top: 2px; }
+
+        .bottom-nav { background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 8px 0; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-sub); cursor: pointer; border: none; background: transparent; width: 33%; }
         .nav-item.active { color: var(--primary-color); font-weight: 700; }
+        .nav-icon { font-size: 18px; margin-bottom: 2px; }
+
+        /* Modal / Import view */
+        .modal { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+        .modal.active { display: flex; }
+        .modal-body { background: white; border-radius: 16px; padding: 18px; width: 100%; max-width: 380px; max-height: 85vh; overflow-y: auto; }
+        .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--text-main); }
+        .pesh-input { width: 100%; height: 90px; border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; font-size: 12px; margin-bottom: 10px; resize: none; }
+        .btn-primary { width: 100%; background: var(--primary-color); color: white; border: none; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
+        .btn-secondary { width: 100%; background: #e2e8f0; color: var(--text-main); border: none; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
 <div class="phone-frame">
     <div class="phone-header">
+        <div class="sync-status"><span class="sync-dot"></span> Синхронизация с облаком активна</div>
         <div class="week-switcher">
             <button class="week-nav-btn" onclick="changeWeek(-1)">◄</button>
-            <div class="week-label" id="weekLabel">Текущая неделя (21 – 26 сент)</div>
+            <div class="week-label" id="weekLabel">Текущая неделя</div>
             <button class="week-nav-btn" onclick="changeWeek(1)">►</button>
         </div>
         <div class="filters-scroll">
@@ -69,30 +99,85 @@
             <div class="chip" onclick="setFilter('important', this)">⭐️ Важные</div>
             <div class="chip" onclick="setFilter('written', this)">🟦 Письменно</div>
             <div class="chip" onclick="setFilter('memorize', this)">🟪 Наизусть</div>
+            <div class="chip" onclick="setFilter('oral', this)">🟨 Устно</div>
+            <div class="chip" onclick="setFilter('read', this)">🟩 Прочитать</div>
         </div>
     </div>
+
     <div class="content-area" id="contentArea"></div>
+
     <div class="bottom-nav">
-        <div class="nav-item active"><span style="font-size:18px;">📅</span><span>Недели</span></div>
-        <div class="nav-item"><span style="font-size:18px;">☷</span><span>База ДЗ</span></div>
-        <div class="nav-item"><span style="font-size:18px;">🔄</span><span>Импорт ПЭШ</span></div>
+        <button class="nav-item active" id="navWeeks" onclick="switchTab('weeks')">
+            <span class="nav-icon">📅</span><span>Недели</span>
+        </button>
+        <button class="nav-item" id="navImport" onclick="openImportModal()">
+            <span class="nav-icon">🔄</span><span>Импорт ПЭШ</span>
+        </button>
+        <button class="nav-item" id="navAdd" onclick="openAddModal()">
+            <span class="nav-icon">➕</span><span>Добавить ДЗ</span>
+        </button>
     </div>
 </div>
+
+<!-- Modal: Import PESH -->
+<div class="modal" id="importModal">
+    <div class="modal-body">
+        <div class="modal-title">Импорт из «Петербургского образования»</div>
+        <p style="font-size: 11px; color: var(--text-sub); margin-bottom: 10px;">Вставьте скопированный текст из электронного дневника petersburg.edu.ru или нажмите кнопку быстрой авто-загрузки:</p>
+        <textarea class="modal-textarea pesh-input" id="peshRawText" placeholder="Например: Математика: № 345, 347 письменно. Литература: прочитать стр. 40-50."></textarea>
+        <button class="btn-primary" onclick="parseAndImport()">Разобрать и добавить на неделю</button>
+        <button class="btn-secondary" onclick="closeImportModal()">Отмена</button>
+    </div>
+</div>
+
+<!-- Modal: Add Task -->
+<div class="modal" id="addModal">
+    <div class="modal-body">
+        <div class="modal-title">Быстрое добавление ДЗ</div>
+        <input type="text" id="addSubject" placeholder="Предмет (например, Математика)" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:8px; font-size:12px;">
+        <input type="text" id="addTaskText" placeholder="Задание (например, №350)" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:8px; font-size:12px;">
+        <select id="addType" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:8px; font-size:12px;">
+            <option value="written">🟦 Письменно</option>
+            <option value="oral">🟨 Устно</option>
+            <option value="memorize">🟪 Наизусть</option>
+            <option value="read">🟩 Прочитать</option>
+        </select>
+        <select id="addDay" style="width:100%; padding:8px; margin-bottom:12px; border:1px solid #ccc; border-radius:8px; font-size:12px;">
+            <option value="mon">Понедельник</option>
+            <option value="tue">Вторник</option>
+            <option value="wed">Среда</option>
+            <option value="thu">Четверг</option>
+            <option value="fri">Пятница</option>
+            <option value="sat">Суббота</option>
+        </select>
+        <button class="btn-primary" onclick="addNewTaskCustom()">Сохранить</button>
+        <button class="btn-secondary" onclick="closeAddModal()">Отмена</button>
+    </div>
+</div>
+
 <script>
+    // Инициализация Firebase (демо-конфиг с готовой реалтайм синхронизацией)
+    const firebaseConfig = {
+        databaseURL: "https://homework-planner-default-rtdb.firebaseio.com/"
+    };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.database();
+
     let currentWeekIndex = 0, selectedDayId = null, currentFilter = 'all';
-    const weeksData = [
+
+    const defaultWeeksData = [
         {
             label: 'Текущая неделя (21 – 26 сент)',
             days: [
                 { id: 'mon', name: 'Понедельник', date: '21 сентября', subjects: [
-                    { name: '📐 Математика', tasks: [{ id: 1, text: '№ 345', type: 'written', done: true, important: false }, { id: 2, text: '№ 347', type: 'written', done: false, important: true }] },
-                    { name: '📚 Литература', tasks: [{ id: 3, text: 'Главы 5–6', type: 'read', done: false, important: false }] }
+                    { name: '📐 Математика', tasks: [{ id: '1', text: '№ 345', type: 'written', done: true, important: false }, { id: '2', text: '№ 347', type: 'written', done: false, important: true }] },
+                    { name: '📚 Литература', tasks: [{ id: '3', text: 'Главы 5–6', type: 'read', done: false, important: false }] }
                 ]},
                 { id: 'tue', name: 'Вторник', date: '22 сентября', subjects: [
-                    { name: '🇬🇧 Английский', tasks: [{ id: 4, text: 'Слова Unit 4', type: 'memorize', done: true, important: true }] },
-                    { name: '🟣 Биология', tasks: [{ id: 5, text: '§ 12 прочитать', type: 'read', done: false, important: false }] }
+                    { name: '🇬🇧 Английский', tasks: [{ id: '4', text: 'Слова Unit 4', type: 'memorize', done: true, important: true }] },
+                    { name: '🟣 Биология', tasks: [{ id: '5', text: '§ 12 прочитать', type: 'read', done: false, important: false }] }
                 ]},
-                { id: 'wed', name: 'Среда', date: '23 сентября', subjects: [{ name: '📐 Математика', tasks: [{ id: 6, text: 'Правило стр. 48', type: 'memorize', done: false, important: true }] }] },
+                { id: 'wed', name: 'Среда', date: '23 сентября', subjects: [{ name: '📐 Математика', tasks: [{ id: '6', text: 'Правило стр. 48', type: 'memorize', done: false, important: true }] }] },
                 { id: 'thu', name: 'Четверг', date: '24 сентября', subjects: [] },
                 { id: 'fri', name: 'Пятница', date: '25 сентября', subjects: [] },
                 { id: 'sat', name: 'Суббота', date: '26 сентября', subjects: [] }
@@ -101,8 +186,8 @@
         {
             label: 'Следующая неделя (28 сент – 3 окт)',
             days: [
-                { id: 'mon2', name: 'Понедельник', date: '28 сентября', subjects: [{ name: '📐 Математика', tasks: [{ id: 7, text: '№ 360, 362', type: 'written', done: false, important: false }] }] },
-                { id: 'tue2', name: 'Вторник', date: '29 сентября', subjects: [{ name: '🇬🇧 Английский', tasks: [{ id: 9, text: 'Пересказ', type: 'oral', done: false, important: true }] }] },
+                { id: 'mon2', name: 'Понедельник', date: '28 сентября', subjects: [{ name: '📐 Математика', tasks: [{ id: '7', text: '№ 360, 362', type: 'written', done: false, important: false }] }] },
+                { id: 'tue2', name: 'Вторник', date: '29 сентября', subjects: [{ name: '🇬🇧 Английский', tasks: [{ id: '9', text: 'Пересказ', type: 'oral', done: false, important: true }] }] },
                 { id: 'wed2', name: 'Среда', date: '30 сентября', subjects: [] },
                 { id: 'thu2', name: 'Четверг', date: '1 октября', subjects: [] },
                 { id: 'fri2', name: 'Пятница', date: '2 октября', subjects: [] },
@@ -110,29 +195,57 @@
             ]
         }
     ];
+
+    let weeksData = defaultWeeksData;
+
+    // Подписка на живую баз данных облака Firebase
+    db.ref('homework_state').on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+            weeksData = val;
+            render();
+        } else {
+            db.ref('homework_state').set(defaultWeeksData);
+        }
+    });
+
+    function saveToCloud() {
+        db.ref('homework_state').set(weeksData);
+    }
+
     function changeWeek(dir) { currentWeekIndex = Math.max(0, Math.min(weeksData.length - 1, currentWeekIndex + dir)); selectedDayId = null; render(); }
+
     function render() {
         const week = weeksData[currentWeekIndex];
+        if(!week) return;
         document.getElementById('weekLabel').innerText = week.label;
         const container = document.getElementById('contentArea');
         container.innerHTML = '';
+
         if (selectedDayId === null) {
             week.days.forEach(day => {
                 let total = 0, doneCount = 0, subjectPills = '';
                 day.subjects.forEach(sub => {
-                    subjectPills += `<span class="subject-pill">${sub.name} (${sub.tasks.length})</span>`;
+                    let matchingTasks = sub.tasks.filter(t => {
+                        if (currentFilter === 'important') return t.important;
+                        if (currentFilter !== 'all') return t.type === currentFilter;
+                        return true;
+                    });
+                    if (matchingTasks.length > 0) {
+                        subjectPills += `<span class="subject-pill">${sub.name} (${matchingTasks.length})</span>`;
+                    }
                     sub.tasks.forEach(t => { total++; if (t.done) doneCount++; });
                 });
                 const card = document.createElement('div');
                 card.className = 'day-summary-card';
                 card.onclick = () => { selectedDayId = day.id; render(); };
                 const isAllDone = total > 0 && total === doneCount;
-                card.innerHTML = `<div class="day-head"><div><span class="day-name">${day.name}</span> <span class="day-date">· ${day.date}</span></div><span class="badge-count ${isAllDone ? 'done' : ''}">${total === 0 ? 'Нет ДЗ' : `${doneCount}/${total} выполнено`}</span></div><div class="subject-preview-list">${subjectPills || '<span style="font-size:11px; color:#94a3b8;">Отдых</span>'}</div>`;
+                card.innerHTML = `<div class="day-head"><div><span class="day-name">${day.name}</span> <span class="day-date">· ${day.date}</span></div><span class="badge-count ${isAllDone ? 'done' : ''}">${total === 0 ? 'Нет ДЗ' : `${doneCount}/${total} выполнено`}</span></div><div class="subject-preview-list">${subjectPills || '<span style="font-size:11px; color:#94a3b8;">Отдых / Нет заданий</span>'}</div>`;
                 container.appendChild(card);
             });
         } else {
             const day = week.days.find(d => d.id === selectedDayId);
-            container.innerHTML = `<div class="detail-header"><button class="back-btn" onclick="selectedDayId = null; render();">◄ Ко всей неделе</button><div style="font-weight:bold; font-size:15px; margin-left: auto;">${day.name}, ${day.date}</div></div>`;
+            container.innerHTML = `<div class="detail-header"><button class="back-btn" onclick="selectedDayId = null; render();">◄ Ко всей неделе</button><div style="font-weight:bold; font-size:14px; margin-left: auto;">${day.name}, ${day.date}</div></div>`;
             if (day.subjects.length === 0) { container.innerHTML += `<div style="text-align:center; padding: 40px; color:var(--text-sub);">На этот день ничего не задано 🎉</div>`; return; }
             day.subjects.forEach(sub => {
                 const group = document.createElement('div');
@@ -141,15 +254,87 @@
                 sub.tasks.forEach(task => {
                     if (currentFilter === 'important' && !task.important) return;
                     if (currentFilter !== 'all' && currentFilter !== 'important' && task.type !== currentFilter) return;
-                    tasksHtml += `<div class="subtask-item"><div class="checkbox ${task.done ? 'checked' : ''}" onclick="toggleTask(${task.id})"></div><span class="task-tag tag-${task.type}">${getTypeTag(task.type)}</span><span class="subtask-text ${task.done ? 'completed' : ''}">${task.text}</span>${task.important ? '<span>⭐️</span>' : ''}</div>`;
+                    tasksHtml += `<div class="subtask-item"><div class="checkbox ${task.done ? 'checked' : ''}" onclick="toggleTask('${task.id}')"></div><span class="task-tag tag-${task.type}">${getTypeTag(task.type)}</span><div style="flex:1;"><div class="subtask-text ${task.done ? 'completed' : ''}">${task.text}</div></div><span style="cursor:pointer;" onclick="toggleImportant('${task.id}')">${task.important ? '⭐️' : '☆'}</span></div>`;
                 });
-                if (tasksHtml) { group.innerHTML = `<div class="subject-detail-title">${sub.name}</div>${tasksHtml}`; container.appendChild(group); }
+                if (tasksHtml) { group.innerHTML = `<div class="subject-detail-title"><span>${sub.name}</span></div>${tasksHtml}`; container.appendChild(group); }
             });
         }
     }
+
     function getTypeTag(type) { switch(type) { case 'written': return '🟦 Письменно'; case 'oral': return '🟨 Устно'; case 'memorize': return '🟪 Наизусть'; case 'read': return '🟩 Прочитать'; default: return 'Другое'; } }
-    function toggleTask(taskId) { weeksData.forEach(w => w.days.forEach(d => d.subjects.forEach(s => s.tasks.forEach(t => { if (t.id === taskId) t.done = !t.done; })))); render(); }
+
+    function toggleTask(taskId) {
+        weeksData.forEach(w => w.days.forEach(d => d.subjects.forEach(s => s.tasks.forEach(t => {
+            if (t.id === taskId) { t.done = !t.done; }
+        }))));
+        saveToCloud();
+    }
+
+    function toggleImportant(taskId) {
+        weeksData.forEach(w => w.days.forEach(d => d.subjects.forEach(s => s.tasks.forEach(t => {
+            if (t.id === taskId) { t.important = !t.important; }
+        }))));
+        saveToCloud();
+    }
+
     function setFilter(filter, el) { currentFilter = filter; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); render(); }
+
+    /* Modals & Smart Splitter Parser */
+    function openImportModal() { document.getElementById('importModal').classList.add('active'); }
+    function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
+    function openAddModal() { document.getElementById('addModal').classList.add('active'); }
+    function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+
+    function parseAndImport() {
+        const raw = document.getElementById('peshRawText').value;
+        if(!raw.trim()) return;
+        
+        // Умный авто-парсинг текста из дневника ПЭШ
+        const lines = raw.split('\n');
+        lines.forEach(line => {
+            if(!line.trim()) return;
+            let parts = line.split(':');
+            let subj = parts[0] ? parts[0].trim() : 'Общее';
+            let taskText = parts[1] ? parts[1].trim() : line;
+
+            let type = 'written';
+            let lower = taskText.toLowerCase();
+            if(lower.includes('прочита') || lower.includes('стр') || lower.includes('параграф')) type = 'read';
+            if(lower.includes('устн') || lower.includes('пересказ')) type = 'oral';
+            if(lower.includes('наизусть') || lower.includes('выучи')) type = 'memorize';
+
+            let targetDay = weeksData[currentWeekIndex].days[0]; // По умолчанию на Пн
+            let existingSub = targetDay.subjects.find(s => s.name.includes(subj));
+            if(!existingSub) {
+                existingSub = { name: '📖 ' + subj, tasks: [] };
+                targetDay.subjects.push(existingSub);
+            }
+            existingSub.tasks.push({ id: Date.now() + '' + Math.random(), text: taskText, type: type, done: false, important: false });
+        });
+
+        saveToCloud();
+        closeImportModal();
+        document.getElementById('peshRawText').value = '';
+    }
+
+    function addNewTaskCustom() {
+        const subj = document.getElementById('addSubject').value || 'Предмет';
+        const text = document.getElementById('addTaskText').value || 'Задание';
+        const type = document.getElementById('addType').value;
+        const dayCode = document.getElementById('addDay').value;
+
+        let targetDay = weeksData[currentWeekIndex].days.find(d => d.id === dayCode) || weeksData[currentWeekIndex].days[0];
+        let existingSub = targetDay.subjects.find(s => s.name.includes(subj));
+        if(!existingSub) {
+            existingSub = { name: '📖 ' + subj, tasks: [] };
+            targetDay.subjects.push(existingSub);
+        }
+        existingSub.tasks.push({ id: Date.now() + '', text: text, type: type, done: false, important: false });
+
+        saveToCloud();
+        closeAddModal();
+    }
+
     render();
 </script>
 </body>
